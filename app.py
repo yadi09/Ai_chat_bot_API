@@ -1,14 +1,20 @@
 import requests
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)  # Allow requests from Moodle
 
-import os
+
+load_dotenv()
 
 # Hugging Face API Key (Replace with your key)
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+
+if not HUGGINGFACE_API_KEY:
+    raise ValueError("HUGGINGFACE_API_KEY is not set. Please add it as an environment variable.")
 
 @app.route('/chat', methods=['GET'])
 def chat():
@@ -34,7 +40,12 @@ def chat():
 
     # Get AI response
     ai_response = response.json()
-    message = ai_response[0]["generated_text"] if isinstance(ai_response, list) else "Error generating response."
+    if isinstance(ai_response, list) and len(ai_response) > 0:
+        message = ai_response[0].get("generated_text", "Error generating response.")
+    elif isinstance(ai_response, dict):
+        message = ai_response.get("generated_text", "Error generating response.")
+    else:
+        message = "Error generating response."
 
     return jsonify({"message": message})
 
